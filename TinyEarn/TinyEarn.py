@@ -276,5 +276,8 @@ class TinyEarn():
         try:
             browser = Firefox(executable_path=r'{}/geckodriver.exe'.format(path), options=opts)
         except WebDriverException:
-            browser = Firefox(executable_path=r'{}/geckodriver'.format(path), options=opts)
+            try:
+                browser = Firefox(executable_path=r'{}/geckodriver'.format(path), options=opts)
+            except WebDriverException:
+                browser = Firefox(executable_path=r'geckodriver', options=opts)
         return browser
