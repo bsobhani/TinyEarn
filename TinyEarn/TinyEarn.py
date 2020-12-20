@@ -5,6 +5,7 @@ import datetime
 import time
 import requests
 import json
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
@@ -272,6 +273,8 @@ class TinyEarn():
         opts = Options()
         path = os.getcwd()
         opts.headless = True
-        browser = Firefox(executable_path=r'{}/geckodriver.exe'.format(path),
-                          options=opts)
+        try:
+            browser = Firefox(executable_path=r'{}/geckodriver.exe'.format(path), options=opts)
+        except WebDriverException:
+            browser = Firefox(executable_path=r'{}/geckodriver'.format(path), options=opts)
         return browser
