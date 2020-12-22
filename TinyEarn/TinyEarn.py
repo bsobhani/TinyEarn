@@ -36,13 +36,15 @@ class TinyEarn():
 
         eps = self.__get_eps(browser, start,end,ticker,delay)
         bv = self.__get_book_value(browser, start,end,ticker,delay)
+        price = self.__get_price(browser, start,end,ticker,delay)
 
-        revenue = self.__get_revenue(browser, start,end,url,delay)
+        #revenue = self.__get_revenue(browser, start,end,url,delay)
 
         browser.close()
 
         #results = self.__merge_dicts(eps,revenue)
         results = self.__merge_dicts(eps,bv)
+        results = self.__merge_dicts(results, price)
 
         if pandas == True:
             return pd.DataFrame.from_dict(results, orient='index')
@@ -76,6 +78,7 @@ class TinyEarn():
             soup = BeautifulSoup(html, 'html.parser')
 
             stats_list = pd.read_html(str(html))
+            print(stats_list)
             stats_list = stats_list[index]
             stats_list["Date"] = pd.to_datetime(stats_list["Date"])
             dfs.append(stats_list)
@@ -102,12 +105,24 @@ class TinyEarn():
         r = pd.concat(dfs, ignore_index=True)
         r = r.set_index("Date")
         r = r.transpose()
-        return r.to_dict()
+        return r
 
     def __get_book_value(self, browser, start, end, ticker, delay = 1):
         url = "https://www.zacks.com/stock/chart/" + ticker + "/fundamental/book-value"
         browser.get(url)
-        return self.__get_table(browser, start, end, url, "DataTables_Table_0", 2, delay)
+        df = self.__get_table(browser, start, end, url, "DataTables_Table_0", 2, delay)
+        df = df.rename({"Value": "BV"})
+        return df.to_dict()
+        
+
+    def __get_price(self, browser, start, end, ticker, delay = 1):
+        url = "https://www.zacks.com/stock/chart/" + ticker + "/price-consensus-eps-surprise-chart"
+        browser.get(url)
+        df = self.__get_table(browser, start, end, url, "DataTables_Table_0", 2, delay)
+        df = df.rename({"Value": "Price"})
+        return df.to_dict()
+
+
 
 
 
