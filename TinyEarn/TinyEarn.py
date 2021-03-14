@@ -20,17 +20,18 @@ class TinyEarn():
     '''
     def __init__(self):
         geckodriver_autoinstaller.install()
+        self.browser = self.__get_browser()
 
     def get_earnings(self, ticker:str, start, end = datetime.date.today(), pandas = True, delay = 1):
 
         if isinstance(start,str): start = pd.to_datetime(start)
         if isinstance(end,str): end = pd.to_datetime(end)
 
-        if not isinstance(start, datetime.date) or not isinstance(end, datetime.date):
-            raise ValueError('Type error occured with start or end parameters. Please enter valid date string or datetime object.')
+        #if not isinstance(start, datetime.date) or not isinstance(end, datetime.date):
+        #    raise ValueError('Type error occured with start or end parameters. Please enter valid date string or datetime object.')
 
-        browser = self.__get_browser()
 
+        browser = self.browser
         url = "https://www.zacks.com/stock/research/" + ticker + "/earnings-announcements"
         browser.get(url)
 
@@ -56,7 +57,13 @@ class TinyEarn():
 
         first = pd.DataFrame(first)
         second = pd.DataFrame(second)
-        r = pd.concat([first, second], axis=0)
+        #r = pd.concat([first, second], axis=0)
+        first_t = first.transpose()
+        second_t = second.transpose()
+        print(first_t)
+        print(second_t)
+        r = first_t.merge(second_t, left_index=True, right_index=True)
+        r = r.transpose()
         return r.to_dict()
 
     def __clean_vals(self, value:str):
@@ -78,16 +85,16 @@ class TinyEarn():
             soup = BeautifulSoup(html, 'html.parser')
 
             stats_list = pd.read_html(str(html))
-            print(stats_list)
+            #print(stats_list)
             stats_list = stats_list[index]
             stats_list["Date"] = pd.to_datetime(stats_list["Date"])
             dfs.append(stats_list)
-            #if date is not None and date == stats_list["Date"].iloc[-1]:
-            #    done = True
+            if date is not None and date == stats_list["Date"].iloc[-1]:
+                done = True
             #else:
             #    date = stats_list["Date"].iloc[-1]
             date = stats_list["Date"].iloc[-1]
-            if date < start:
+            if start is not None and date < start:
                 done = True
 
             next_btn = browser.find_element_by_xpath('//*[@id="'+prefix+'_next"]')
@@ -104,29 +111,31 @@ class TinyEarn():
 
         r = pd.concat(dfs, ignore_index=True)
         r = r.set_index("Date")
-        r = r.transpose()
         return r
 
-    def __get_book_value(self, browser, start, end, ticker, delay = 1):
+    def get_book_value(self, ticker, start=None, end=None, delay = 1):
+        browser = self.browser
         url = "https://www.zacks.com/stock/chart/" + ticker + "/fundamental/book-value"
         browser.get(url)
         df = self.__get_table(browser, start, end, url, "DataTables_Table_0", 2, delay)
-        df = df.rename({"Value": "BV"})
-        return df.to_dict()
+        df = df.rename(columns={"Value": "BV"})
+        return df
         
 
-    def __get_price(self, browser, start, end, ticker, delay = 1):
+    def get_price(self, ticker, start=None, end=None, delay = 1):
+        browser = self.browser
         url = "https://www.zacks.com/stock/chart/" + ticker + "/price-consensus-eps-surprise-chart"
         browser.get(url)
         df = self.__get_table(browser, start, end, url, "DataTables_Table_0", 2, delay)
-        df = df.rename({"Value": "Price"})
-        return df.to_dict()
+        df = df.rename(columns={"Value": "Price"})
+        return df
 
 
 
 
 
-    def __get_eps(self, browser, start, end, ticker, delay = 1):
+    def get_eps(self, ticker, start=None, end=None, delay = 1):
+        browser = self.browser
         url = "https://www.zacks.com/stock/research/" + ticker + "/earnings-announcements"
         browser.get(url)
         return self.__get_table(browser, start, end, url, "earnings_announcements_earnings_table", 3, delay)
